@@ -4458,6 +4458,80 @@ async function backupLibrary() {
   }
 }
 
+// Split backup: instead of one potentially-oversized file (>100 MB trips
+// GitHub's upload limit), write one self-contained part file per song plus a
+// small header part with everything else — the same layout the repo's
+// backup-splits/ directory uses, so every part restores on its own via ⭱.
+async function backupLibrarySplits() {
+  const songs = [...state.songs].sort((a, b) => b.createdAt - a.createdAt);
+  if (!songs.length) {
+    toast('Your library is empty — nothing to back up.');
+    return;
+  }
+  const metaOnly = !!state.metaOnlyBackup;
+  try {
+    toast('Building split backup — one file per song…');
+    const stamp = new Date().toISOString().slice(0, 10);
+    const slug = (t) => String(t || 'song').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'song';
+    // Header part: everything except the songs and their audio.
+    const header = {
+      app: 'music-for-studio',
+      kind: 'library-backup-splits',
+      version: 2,
+      exportedAt: new Date().toISOString(),
+      audio: metaOnly ? 'none' : 'per-part',
+      partCount: songs.length,
+      settings: {
+        theme: state.theme,
+        aiEnabled: !!state.aiEnabled,
+        remoteEnabled: !!state.remoteEnabled,
+        remoteUrl: typeof state.remoteUrl === 'string' ? state.remoteUrl : '',
+      },
+      playlists: state.playlists.map((p) => ({ id: p.id, name: p.name, songIds: p.songIds, createdAt: p.createdAt })),
+    };
+    downloadBlob(new Blob([JSON.stringify(header, null, 1)], { type: 'application/json' }), `music-for-studio-splits-header-${stamp}.json`);
+    // A beat between downloads — rapid-fire identical-origin downloads can get
+    // coalesced by the browser.
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    let withAudio = 0;
+    for (const song of songs) {
+      let audioB64 = null;
+      if (!metaOnly) {
+        try {
+          audioB64 = await blobToB64(await ensureAudio(song));
+          withAudio++;
+        } catch (err) {
+          console.warn('Split backup: no audio for', song.id, err);
+        }
+      }
+      const item = { meta: workspaceMeta(song), audioB64, audioMime: audioB64 ? 'audio/wav' : null };
+      const part = {
+        app: 'music-for-studio',
+        kind: 'library-backup',
+        partOf: `splits-${stamp}`,
+        songChecksum: await sha256Hex(JSON.stringify(item)),
+        settings: header.settings,
+        playlists: header.playlists,
+        songs: [item],
+      };
+      const id = song.meta?.id || song.id;
+      downloadBlob(new Blob([JSON.stringify(part, null, 1)], { type: 'application/json' }), `${id}-${slug(song.title || song.meta?.title)}-${stamp}.json`);
+      await wait(120);
+    }
+    // A successful backup resets the reminder counter (same rule as full backup).
+    state.backupReminder = state.backupReminder || { every: 10, count: 0, remindedAt: 0 };
+    state.backupReminder.count = 0;
+    state.backupReminder.remindedAt = 0;
+    saveSettings();
+    refreshBackupBanner();
+    const mode = metaOnly ? 'metadata-only' : withAudio === songs.length ? 'with audio' : 'partial audio';
+    toast(`Split backup saved (${mode}) — ${songs.length} song file(s) + 1 header.`, 'success');
+  } catch (err) {
+    console.error(err);
+    toast('Split backup failed: ' + err.message);
+  }
+}
+
 async function restoreLibrary(file) {
   let archive = null;
   try {
@@ -4833,7 +4907,10 @@ function renderWorkspace(el) {
         <button class="ghost" id="wsBackup">⭳ Backup library (.json)</button>
         <label class="ghost ws-import-btn">⭱ Restore from backup<input type="file" id="wsRestore" accept=".json,application/json" hidden /></label>
       </div>
-      <p class="folder-note">A <b>backup</b> is one self-contained file: ${state.metaOnlyBackup ? 'metadata only (tiny) — every song\'s prompt, style, seed, lyrics and edits, with audio re-rendered exactly from its seed on first play after a restore' : 'every song with its audio embedded (so edits and imports are preserved)'} — plus your playlists. Restores are checksum-verified and come with a per-song report. Change the mode in Settings → Backups.</p>
+      <div class="backup-row">
+        <button class="ghost" id="wsBackupSplits">⭳ Backup as per-song splits (one .json each)</button>
+      </div>
+      <p class="folder-note">A <b>backup</b> is one self-contained file: ${state.metaOnlyBackup ? 'metadata only (tiny) — every song\'s prompt, style, seed, lyrics and edits, with audio re-rendered exactly from its seed on first play after a restore' : 'every song with its audio embedded (so edits and imports are preserved)'} — plus your playlists. Restores are checksum-verified and come with a per-song report. Change the mode in Settings → Backups. The <b>split</b> backup downloads one small .json per song plus a <code>_header</code> file — handy for large libraries and for version-controlling your library without hitting file-size upload limits; every part restores on its own through ⭱.</p>
     </div>
     ${total ? '' : `<div class="empty-state">
       <div class="empty-icon">🗂</div>
@@ -4846,6 +4923,7 @@ function renderWorkspace(el) {
   wireCopyLinks(el);
   $('wsExport').addEventListener('click', exportWorkspace);
   $('wsBackup').addEventListener('click', backupLibrary);
+  $('wsBackupSplits').addEventListener('click', backupLibrarySplits);
   const inp = $('wsImport');
   inp.addEventListener('change', () => {
     importWorkspaceFiles(inp.files);
