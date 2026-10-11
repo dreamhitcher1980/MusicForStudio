@@ -1,6 +1,14 @@
 # ✦ MusicForStudio
 
+[![Build](https://github.com/dreamhitcher1980/MusicForStudio/actions/workflows/build.yml/badge.svg)](https://github.com/dreamhitcher1980/MusicForStudio/actions/workflows/build.yml)
+
 A private, family-oriented music studio that runs in your browser. Create original songs from a text description, sing them with your **own recorded voice**, remix any video link into music, and export to WAV / MP3 / MIDI / MP4 video — all with per-family-member libraries locked behind passcodes.
+
+> **📦 Backup your library safely** — the app exports either one full backup file, or (Workspace → Backup & restore → *per-song splits*) one checksummed `.json` per song plus a small `_header` part, sized for version control and large libraries:
+>
+> 1. In the app: **Workspace → Backup & restore → ⭳ Backup as per-song splits**
+> 2. Each part restores on its own via **⭱ Restore from backup** (per-song sha256 checksums are re-verified on import)
+> 3. In this repo, [backup-splits/](backup-splits/README.md) holds a real split of an earlier backup; [merge-backup.cjs](merge-backup.cjs) reassembles and byte-verifies it (`node merge-backup.cjs --verify`) — the same check CI runs on every push
 
 ## Features
 
