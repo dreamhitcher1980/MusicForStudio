@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b0b12" />
+  <title>MusicForStudio — Personal music studio</title>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">✦</span>
+        <span class="brand-name">Music<strong>ForStudio</strong></span>
+      </div>
+      <nav class="tabs" aria-label="Main navigation">
+        <button class="tab active" data-tab="home" title="Home">⌂ <span>Home</span></button>
+        <button class="tab create-tab" data-tab="create" title="Create">✦ <span>Create</span></button>
+        <button class="tab" data-tab="remix" title="Remix">⟳ <span>Remix</span></button>
+        <button class="tab" data-tab="library" title="Library">▤ <span>Library</span></button>
+        <button class="tab" data-tab="workspace" title="Workspace">🗂 <span>Workspace</span></button>
+        <button class="tab" data-tab="explore" title="Explore">◈ <span>Explore</span></button>
+        <button class="tab" data-tab="learn" title="Learn">🎓 <span>Learn</span></button>
+        <button class="tab" data-tab="profile" title="Profile">◎ <span>Profile</span></button>
+        <button class="tab" data-tab="settings" title="Settings">⚙ <span>Settings</span></button>
+      </nav>
+      <div class="top-actions">
+        <label class="search-box">⌕ <input id="searchInput" placeholder="Search your songs" /></label>
+        <button id="accountChip" class="account-chip" title="Family accounts — switch or sign in"></button>
+      </div>
+    </header>
+
+    <div class="backup-banner" id="backupBanner" hidden>
+      <span class="backup-banner-icon">⭳</span>
+      <span class="backup-banner-text" id="backupBannerText"></span>
+      <button class="ghost" id="backupBannerNow">⭳ Back up now</button>
+      <button class="mini-btn" id="backupBannerDismiss" title="Remind me again at the next multiple">✕</button>
+    </div>
+
+    <main class="content" id="content"></main>
+
+    <footer class="dock">
+      <div class="now-playing">
+        <div class="art" id="art"><span id="artLetter">✦</span><i class="eq" id="eq"><b></b><b></b><b></b><b></b></i></div>
+        <div class="np-text">
+          <b id="npTitle">Nothing playing</b>
+          <span id="npArtist">Your personal studio</span>
+        </div>
+        <button id="likeBtn" class="ghost-mini" title="Like (L)">♡</button>
+      </div>
+      <div class="transport">
+        <div class="transport-buttons">
+        <button id="prevBtn" class="ctrl-btn" title="Previous (P)">⏮</button>
+        <button id="playBtn" class="play-btn" title="Play / Pause (Space)">▶</button>
+        <button id="nextBtn" class="ctrl-btn" title="Next (N)">⏭</button>
+        <button id="shuffleBtn" class="ctrl-btn" title="Shuffle (S)">🔀</button>
+        <button id="repeatBtn" class="ctrl-btn" title="Repeat off (R)">🔁</button>
+        </div>
+        <div class="seek-row">
+          <span id="curTime" class="time">0:00</span>
+          <input id="seekBar" type="range" min="0" max="1000" value="0" step="1" />
+          <span id="durTime" class="time">0:00</span>
+        </div>
+      </div>
+      <div class="tools">
+        <button id="lyricsBtn" class="ghost-mini" title="Show lyrics">𝄞 Lyrics</button>
+        <button id="queueBtn" class="ctrl-btn" title="Play queue (Q)">☰</button>
+        <button id="muteBtn" class="ctrl-btn" title="Mute (M)">♫</button>
+        <input id="volumeBar" type="range" min="0" max="1" step="0.01" value="0.8" />
+      </div>
+      <canvas id="visualizer" width="1400" height="40"></canvas>
+    </footer>
+  </div>
+
+  <dialog id="lyricsDialog">
+    <div class="dialog-head"><h2 id="lyricsTitle">Lyrics</h2><button id="lyricsClose" class="mini-btn">✕</button></div>
+    <pre id="lyricsBody" class="lyrics-body"></pre>
+  </dialog>
+
+  <dialog id="shareDialog">
+    <div class="dialog-head"><h2 id="shareDialogTitle">Share this song</h2><button id="shareClose" class="mini-btn">✕</button></div>
+    <p class="dialog-note" id="shareNote">Anyone who opens this link can regenerate the exact same track in MusicForStudio — nothing is uploaded or stored.</p>
+    <div class="share-row">
+      <input id="shareInput" readonly spellcheck="false" />
+      <button id="shareCopy" class="ghost">Copy</button>
+    </div>
+    <div class="share-qr-wrap">
+      <canvas id="shareQr" class="share-qr"></canvas>
+      <span class="share-qr-hint">Scan with your phone to open this song</span>
+    </div>
+  </dialog>
+
+  <dialog id="incomingDialog">
+    <div class="dialog-head"><h2>You received a song</h2><button id="incomingClose" class="mini-btn">✕</button></div>
+    <div class="card-grid incoming-grid" id="incomingCard"></div>
+    <div class="incoming-actions">
+      <button id="incomingPlay" class="cta">▶ Play</button>
+      <button id="incomingSave" class="ghost">＋ Save to library</button>
+      <button id="incomingDownload" class="ghost">⤓ Download</button>
+    </div>
+    <p class="dialog-note">Regenerated locally from the seed in this link — nothing was downloaded.</p>
+  </dialog>
+
+  <dialog id="editDialog">
+    <div class="dialog-head"><h2>Trim & fade</h2><button id="editClose" class="mini-btn">✕</button></div>
+    <p class="dialog-note" id="editNote">Trim the start/end and shape the fades. The edited WAV replaces this song's audio in your library — the original seed is untouched, so share links still reproduce the unedited version.</p>
+    <div class="edit-presets">
+      <button class="preset-chip" data-preset="clip">✂ Make it a clip (30s)</button>
+      <button class="preset-chip" data-preset="outro">♪ Fade to silence outro</button>
+      <button class="preset-chip" data-preset="intro">☀ Soft intro</button>
+      <button class="preset-chip" data-preset="drop">⏭ Drop the intro</button>
+      <button class="preset-chip" data-preset="fadequick">▽ Quick fade out (2s)</button>
+      <button class="preset-chip" data-preset="fadeslow">▽ Slow fade out (8s)</button>
+      <button class="preset-chip" data-preset="fadeboth">◈ Fade in & out</button>
+    </div>
+    <div class="edit-presets edit-custom-presets" id="editCustomPresets"></div>
+    <div class="edit-preset-save">
+      <input id="editPresetName" placeholder="Save current sliders as preset…" maxlength="40" spellcheck="false" />
+      <button class="mini-btn" id="editPresetSave" title="Save the current start/end/fades as a named preset">＋ Save preset</button>
+    </div>
+    <div class="edit-zoom-row">
+      <span class="edit-zoom-label">Zoom</span>
+      <input type="range" id="editZoom" min="1" max="16" value="1" step="1" />
+      <b id="editZoomLbl">×1</b>
+      <button class="mini-btn" id="editZoomFit" title="Zoom back out to the whole song">Fit</button>
+    </div>
+    <canvas id="editWave" class="edit-wave" height="92"></canvas>
+    <div class="edit-rows">
+      <label class="edit-row"><span>Start</span><input type="range" id="editStart" min="0" max="1000" value="0" step="1" /><b id="editStartLbl">0:00</b></label>
+      <label class="edit-row"><span>End</span><input type="range" id="editEnd" min="0" max="1000" value="1000" step="1" /><b id="editEndLbl">0:00</b></label>
+      <label class="edit-row"><span>Fade in</span><input type="range" id="editFadeIn" min="0" max="1000" value="0" step="1" /><b id="editFadeInLbl">0s</b></label>
+      <label class="edit-row"><span>Fade out</span><input type="range" id="editFadeOut" min="0" max="1000" value="0" step="1" /><b id="editFadeOutLbl">0s</b></label>
+    </div>
+    <div class="edit-actions">
+      <button class="ghost" id="editPreview">▶ Preview</button>
+      <button class="ghost" id="editCut" title="Remove the selected section and join the parts">✂ Cut section</button>
+      <button class="ghost" id="editExtend" title="Make the song twice as long">⤢ Extend ×2</button>
+      <button class="ghost" id="editInstrumental" title="Derive a karaoke backing track — same song, vocals stripped">♪ Instrumental</button>
+      <button class="cta" id="editApply">✂ Apply edit</button>
+    </div>
+  </dialog>
+
+  <dialog id="queueDialog">
+    <div class="dialog-head"><h2>Up next</h2><button id="queueClose" class="mini-btn">✕</button></div>
+    <p class="dialog-note" id="queueNote">The queue follows the view you started from. Click a song to jump; drag or use ↑ ↓ to reorder.</p>
+    <div class="queue-list" id="queueList"></div>
+  </dialog>
+
+  <dialog id="abDialog" class="ab-dialog">
+    <div class="dialog-head"><h2 id="abTitle">A/B compare</h2><button id="abClose" class="mini-btn">✕</button></div>
+    <p class="dialog-note">Switch takes instantly — playback continues from the same position, so you hear both takes over the same passage. Keys <b>A</b>, <b>B</b>, <b>C</b>… jump between takes.</p>
+    <div class="ab-takes" id="abTakes"></div>
+  </dialog>
+
+  <dialog id="restoreReportDialog">
+    <div class="dialog-head"><h2>Restore report</h2><button id="restoreReportClose" class="mini-btn">✕</button></div>
+    <p class="dialog-note" id="restoreReportSummary"></p>
+    <div class="restore-report-list" id="restoreReportList"></div>
+  </dialog>
+
+  <dialog id="playlistPickerDialog">
+    <div class="dialog-head"><h2 id="playlistPickerTitle">Add to playlist</h2><button id="playlistPickerClose" class="mini-btn">✕</button></div>
+    <p class="dialog-note">Pick a playlist, or create a new one below. Songs are referenced, never copied — editing a playlist never touches the originals.</p>
+    <div class="playlist-pick-list" id="playlistPickerList"></div>
+    <div class="playlist-pick-new">
+      <input id="playlistPickerName" placeholder="New playlist name…" spellcheck="false" maxlength="60" />
+      <button id="playlistPickerCreate" class="mini-btn">Create & add</button>
+    </div>
+  </dialog>
+
+  <div class="dl-menu" id="downloadMenu" hidden>
+    <button id="dlWav"><span>⭳ WAV</span><small>original, lossless</small></button>
+    <button id="dlMp3"><span>♫ MP3</span><small>compact, instant</small></button>
+    <button id="dlMp4"><span>🎬 MP4 video</span><small>visualizer + audio</small></button>
+    <button id="dlCover"><span>🖼️ Cover art</span><small>.png, 512×512</small></button>
+    <button id="dlMidi"><span>🎹 MIDI</span><small>chords · bass · drums · lead</small></button>
+    <button id="dlLicense"><span>📜 License</span><small>ownership certificate</small></button>
+  </div>
+
+  <dialog id="videoDialog" class="video-dialog">
+    <div class="dialog-head"><h2 id="videoTitle">Encoding video</h2><button id="videoCancelBtn" class="mini-btn" title="Cancel">✕</button></div>
+    <p class="dialog-note" id="videoNote"></p>
+    <div class="progress-track"><div class="progress-fill" id="videoFill"></div></div>
+    <p class="video-status" id="videoStatus"></p>
+  </dialog>
+
+  <div class="toast" id="toast" role="status"></div>
+  <link rel="stylesheet" href="/src/style.css" />
+  <script src="/vendor/lame.min.js"></script>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

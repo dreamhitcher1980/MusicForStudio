@@ -1,0 +1,8 @@
+# MusicGen local server dependencies (see musicgen_server.py)
+fastapi>=0.110
+uvicorn>=0.29
+pydantic>=2.6
+torch>=2.2
+transformers>=4.40  # MusicGen needs >= 4.31
+accelerate>=0.29    # required by transformers model loading
+numpy>=1.26
