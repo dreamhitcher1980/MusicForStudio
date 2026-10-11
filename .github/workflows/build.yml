@@ -27,5 +27,8 @@ jobs:
       - name: Syntax-check all source modules
         run: for f in src/*.js; do node --check "$f" || exit 1; done
 
+      - name: Python server syntax check
+        run: python3 -m py_compile server/musicgen_server.py
+
       - name: Build
         run: npx vite build
