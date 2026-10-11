@@ -31,6 +31,10 @@ A private, family-oriented music studio that runs in your browser. Create origin
 
 ![Library view](docs/img/library.png)
 
+**Create — pick a style, sing with your own recorded voice, and hit ✦ Create song**
+
+![Create view with the vocal picker set to your recorded voice](docs/img/create.png)
+
 ## Setup
 
 ```bash
