@@ -1,0 +1,31 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # esbuild's postinstall is blocked by npm's allow-scripts policy in this
+      # project — run its installer explicitly (see AGENTS.md).
+      - name: Fix esbuild install
+        run: node node_modules/esbuild/install.js
+
+      - name: Syntax-check all source modules
+        run: for f in src/*.js; do node --check "$f" || exit 1; done
+
+      - name: Build
+        run: npx vite build
