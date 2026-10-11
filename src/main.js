@@ -272,15 +272,15 @@ function cardHtml(song, { showDelete = false, discovery = false, showRemove = fa
         ${playing ? '<i class="eq-big"><b></b><b></b><b></b><b></b></i>' : ''}
         ${take ? `<span class="take-badge" title="This song's place in its variation family">Take ${take.index} of ${take.total}</span>` : ''}
         ${song.keptTake ? '<span class="keeper-badge" title="Your favourite take of this family">★ Keeper</span>' : ''}
-        <button class="cover-play" title="Play">▶</button>
-        <button class="cover-save" title="Save to library">＋</button>
-        <button class="cover-download" title="Download WAV">⤓</button>
-        ${showDelete ? '<button class="cover-del" title="Delete">🗑</button>' : ''}
-        ${showRemove ? '<button class="cover-remove" title="Remove from playlist">−</button>' : ''}
-        ${showEdit ? '<button class="cover-edit" title="Trim & fade">✂</button>' : ''}
-        ${showKeep ? `<button class="cover-keep" title="Keep this take — mark it as the favourite of the family">${song.keptTake ? '★' : '☆'}</button>` : ''}
-        ${showAb ? '<button class="cover-ab" title="A/B compare — hear the takes of this family back-to-back">⇄</button>' : ''}
-        <button class="cover-vary" title="Duplicate as variation (A/B)">≋</button>
+        <button class="cover-play" draggable="false" title="Play">▶</button>
+        <button class="cover-save" draggable="false" title="Save to library">＋</button>
+        <button class="cover-download" draggable="false" title="Download WAV">⤓</button>
+        ${showDelete ? '<button class="cover-del" draggable="false" title="Delete">🗑</button>' : ''}
+        ${showRemove ? '<button class="cover-remove" draggable="false" title="Remove from playlist">−</button>' : ''}
+        ${showEdit ? '<button class="cover-edit" draggable="false" title="Trim & fade">✂</button>' : ''}
+        ${showKeep ? `<button class="cover-keep" draggable="false" title="Keep this take — mark it as the favourite of the family">${song.keptTake ? '★' : '☆'}</button>` : ''}
+        ${showAb ? '<button class="cover-ab" draggable="false" title="A/B compare — hear the takes of this family back-to-back">⇄</button>' : ''}
+        <button class="cover-vary" draggable="false" title="Duplicate as variation (A/B)">≋</button>
       </div>
       <div class="card-meta">
         <b class="card-title" title="${escapeHtml(song.title)}">${escapeHtml(song.title)}</b>
@@ -291,6 +291,12 @@ function cardHtml(song, { showDelete = false, discovery = false, showRemove = fa
 }
 
 function bindCard(card, song, { onDelete, onRemove, onEdit } = {}) {
+  // Drag a card onto the Up Next queue dialog to append it to the queue.
+  card.draggable = true;
+  card.addEventListener('dragstart', (e) => {
+    try { e.dataTransfer.setData('text/plain', `song:${song.id}`); } catch {}
+    e.dataTransfer.effectAllowed = 'copy';
+  });
   const play = () => {
     state.order = visibleOrder();
     playSong(song.id);
@@ -6056,6 +6062,29 @@ function wireQueueDrag() {
     const row = e.target.closest('.queue-row');
     if (row) playSong(row.dataset.id);
   });
+  // Drop a Library card here to append that song to the queue.
+  els.queueDialog.addEventListener('dragover', (e) => {
+    if (![...e.dataTransfer.types].includes('text/plain')) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    els.queueDialog.classList.add('drop-target');
+  });
+  els.queueDialog.addEventListener('dragleave', () => els.queueDialog.classList.remove('drop-target'));
+  els.queueDialog.addEventListener('drop', (e) => {
+    els.queueDialog.classList.remove('drop-target');
+    const raw = e.dataTransfer.getData('text/plain') || '';
+    const m = raw.match(/^song:([A-Za-z0-9_-]+)$/);
+    if (!m) return; // internal queue-row drags carry a bare id
+    e.preventDefault();
+    const song = findSong(m[1]);
+    if (!song) return;
+    state.order = state.order.length ? state.order : visibleOrder();
+    if (state.order.includes(song.id)) { toast(`“${song.title}” is already in the queue.`); return; }
+    state.order.push(song.id);
+    if (state.shuffle) toggleShuffle(); // appending ends the shuffle pool
+    renderQueue();
+    toast(`Added “${song.title}” to the queue.`, 'success');
+  });
   els.queueList.addEventListener('dragstart', (e) => {
     const row = e.target.closest('.queue-row');
     if (!row) return;
@@ -6144,6 +6173,13 @@ function bindEvents() {
     if (e.target === els.queueDialog) els.queueDialog.close();
   });
   wireQueueDrag();
+  // Deep link `#queue=1` opens the Up Next dialog on top of the routed view.
+  const openQueueFromHash = () => {
+    if (!location.hash.match(/[#&]queue=1(?:&|$)/)) return;
+    els.queueBtn.click();
+  };
+  openQueueFromHash();
+  window.addEventListener('hashchange', openQueueFromHash);
 
   els.seekBar.addEventListener('input', () => {
     els.seekBar.dataset.dragging = '1';

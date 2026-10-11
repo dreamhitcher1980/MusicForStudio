@@ -2098,6 +2098,13 @@ h1 {
   overflow: auto;
 }
 
+/* A Library card dragged over the open dialog highlights the whole panel. */
+#queueDialog.drop-target {
+  outline: 2px dashed var(--accent);
+  outline-offset: -4px;
+  border-radius: 12px;
+}
+
 .queue-row {
   display: flex;
   align-items: center;

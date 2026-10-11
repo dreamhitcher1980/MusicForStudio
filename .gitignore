@@ -5,3 +5,5 @@ dist/
 __pycache__/
 *.pyc
 .DS_Store
+# Local backup exports can exceed GitHub's 100 MB file limit — keep on disk only.
+music-for-studio-backup-*.json
