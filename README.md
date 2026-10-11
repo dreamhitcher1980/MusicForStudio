@@ -13,6 +13,16 @@ A private, family-oriented music studio that runs in your browser. Create origin
 - **Exports** — WAV, MP3 (lame), MIDI, cover PNG, and an MP4 video export with a live canvas visualizer.
 - **Accounts** — family members (owner: *DreamHitcherS*, default passcode `1234`) each with their own library, voice profile and settings. Deep-link everything: `#settings=engine`, `#learn=structure`, `#library=liked`, `#explore=<genre>`, `#queue=1`.
 
+## Screenshots
+
+**Home — describe a song and create it right in the browser**
+
+![Home view](docs/img/home.png)
+
+**Library — your songs, playlists, likes, and the full-width player**
+
+![Library view](docs/img/library.png)
+
 ## Setup
 
 ```bash
