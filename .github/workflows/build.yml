@@ -32,3 +32,9 @@ jobs:
 
       - name: Build
         run: npx vite build
+
+      # The committed per-song backup parts must stay checksum-clean; the
+      # original 112 MB backup is deliberately not in git (100 MB upload
+      # limit), so this validates every part and the self-contained merge.
+      - name: Verify backup splits
+        run: node merge-backup.cjs --verify && rm -f music-for-studio-backup-reassembled.json
