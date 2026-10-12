@@ -27,8 +27,10 @@ jobs:
       - name: Syntax-check all source modules
         run: for f in src/*.js; do node --check "$f" || exit 1; done
 
+      # Byte-code compiles every .py in server/ (recursively, excluding caches)
+      # so future server files are checked automatically.
       - name: Python server syntax check
-        run: python3 -m py_compile server/musicgen_server.py
+        run: python3 -m compileall -q server -x '__pycache__|archive|deprecated' --invalidation-mode unchecked-hash
 
       - name: Build
         run: npx vite build
