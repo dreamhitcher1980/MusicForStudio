@@ -33,7 +33,7 @@ A private, family-oriented music studio that runs in your browser. Create origin
 
 **Create — pick a style, sing with your own recorded voice, and hit ✦ Create song**
 
-![Create view with the vocal picker set to your recorded voice](docs/img/create.png)
+![Create view with the vocal picker open on “My recorded voice”](docs/img/create.png)
 
 ## Setup
 
